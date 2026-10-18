@@ -107,11 +107,13 @@
     <div class="cards-container">
         <div class="info-card temp-card">
             <div class="card-title">อุณหภูมิปัจจุบัน</div>
-            <div class="card-value">32 °C</div>
+            <!-- อัปเดตอุณหภูมิปัจจุบันตรงนี้ -->
+            <div class="card-value">34 °C</div> 
         </div>
         <div class="info-card humidity-card">
             <div class="card-title">ความชื้นปัจจุบัน</div>
-            <div class="card-value">54 %</div>
+            <!-- อัปเดตความชื้นปัจจุบันตรงนี้ -->
+            <div class="card-value">50 %</div> 
         </div>
     </div>
 
@@ -124,18 +126,22 @@
 <script>
     const ctx = document.getElementById('weatherChart').getContext('2d');
 
-    // Sample data based on the image
+    // อัปเดตข้อมูลวันที่และเวลาของกราฟตรงนี้
     const labels = [
-        '17/9/2026 12:05:00', 
-        '17/9/2026 12:15:00', 
-        '17/9/2026 12:20:00', 
-        '17/9/2026 12:25:00', 
-        '17/9/2026 12:30:01', 
-        '17/9/2026 12:35:02', 
-        '17/9/2026 12:40:02'
+        '18/10/2026 12:30:00', 
+        '18/10/2026 12:35:00', 
+        '18/10/2026 12:40:00', 
+        '18/10/2026 12:45:00', 
+        '18/10/2026 12:50:00', 
+        '18/10/2026 12:55:00', 
+        '18/10/2026 13:01:00'
     ];
-    const tempData = [26, 27, 28, 29, 30, 31, 32];
-    const humidityData = [65, 60, 55, 50, 60, 58, 54];
+    
+    // อัปเดตข้อมูลอุณหภูมิในกราฟ (ให้สอดคล้องกับค่าด้านบน)
+    const tempData = [28, 29, 30, 31, 32, 33, 34];
+    
+    // อัปเดตข้อมูลความชื้นในกราฟ (ให้สอดคล้องกับค่าด้านบน)
+    const humidityData = [60, 58, 55, 52, 50, 48, 50];
 
     new Chart(ctx, {
         type: 'line',
