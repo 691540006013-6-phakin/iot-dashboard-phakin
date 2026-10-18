@@ -37,13 +37,6 @@
             color: #6c757d;
             font-size: 14px;
         }
-        
-        .sheet-id {
-            background-color: #e9ecef;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-family: monospace;
-        }
 
         .cards-container {
             display: flex;
@@ -100,20 +93,18 @@
     <!-- Header -->
     <div class="header-card">
         <h1>Kalasin Weather & IoT Sensor Dashboard ภาคิน ไกรวิเศษ</h1>
-        <div class="sheet-info">เชื่อมต่อตาราง Google Sheets: <span class="sheet-id">1QO0jbdF5_WgXmq7tq9scCOvJegaDXp5w04...</span></div>
+        <div class="sheet-info">สถานะ: <span id="status-text" style="color: green;">กำลังซิงค์ข้อมูลกับ Google Sheets...</span></div>
     </div>
 
     <!-- Info Cards -->
     <div class="cards-container">
         <div class="info-card temp-card">
             <div class="card-title">อุณหภูมิปัจจุบัน</div>
-            <!-- อัปเดตอุณหภูมิปัจจุบันตรงนี้ -->
-            <div class="card-value">34 °C</div> 
+            <div class="card-value" id="current-temp">-- °C</div>
         </div>
         <div class="info-card humidity-card">
             <div class="card-title">ความชื้นปัจจุบัน</div>
-            <!-- อัปเดตความชื้นปัจจุบันตรงนี้ -->
-            <div class="card-value">50 %</div> 
+            <div class="card-value" id="current-humid">-- %</div>
         </div>
     </div>
 
@@ -124,33 +115,19 @@
 </div>
 
 <script>
+    // ใส่ลิงก์ CSV ที่คุณให้มา
+    const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT4f3IKm103HfpLE_1tlE2k-6XIaYlSJwigKrqOHX7ALqM-qjufkvLFsMPwMFaWi0IIpsgqWoXJ_nhN/pub?gid=0&single=true&output=csv'; 
+
+    // ตั้งค่ากราฟเริ่มต้น
     const ctx = document.getElementById('weatherChart').getContext('2d');
-
-    // อัปเดตข้อมูลวันที่และเวลาของกราฟตรงนี้
-    const labels = [
-        '18/10/2026 12:30:00', 
-        '18/10/2026 12:35:00', 
-        '18/10/2026 12:40:00', 
-        '18/10/2026 12:45:00', 
-        '18/10/2026 12:50:00', 
-        '18/10/2026 12:55:00', 
-        '18/10/2026 13:01:00'
-    ];
-    
-    // อัปเดตข้อมูลอุณหภูมิในกราฟ (ให้สอดคล้องกับค่าด้านบน)
-    const tempData = [28, 29, 30, 31, 32, 33, 34];
-    
-    // อัปเดตข้อมูลความชื้นในกราฟ (ให้สอดคล้องกับค่าด้านบน)
-    const humidityData = [60, 58, 55, 52, 50, 48, 50];
-
-    new Chart(ctx, {
+    const weatherChart = new Chart(ctx, {
         type: 'line',
         data: {
-            labels: labels,
+            labels: [],
             datasets: [
                 {
                     label: 'อุณหภูมิ (°C)',
-                    data: tempData,
+                    data: [],
                     borderColor: '#f39c12',
                     backgroundColor: 'rgba(243, 156, 18, 0.1)',
                     borderWidth: 2,
@@ -162,7 +139,7 @@
                 },
                 {
                     label: 'ความชื้น (%)',
-                    data: humidityData,
+                    data: [],
                     borderColor: '#17a2b8',
                     backgroundColor: 'rgba(23, 162, 184, 0.1)',
                     borderWidth: 2,
@@ -192,8 +169,8 @@
             },
             scales: {
                 y: {
-                    min: 25,
-                    max: 65,
+                    min: 20,
+                    max: 80, // ปรับลด-เพิ่มกรอบกราฟได้ที่นี่
                     ticks: {
                         stepSize: 5
                     },
@@ -209,6 +186,58 @@
             }
         }
     });
+
+    // ฟังก์ชันดึงข้อมูลจาก Google Sheets
+    async function fetchSheetData() {
+        try {
+            const response = await fetch(csvUrl);
+            const data = await response.text();
+            
+            // แยกข้อมูลทีละบรรทัด และข้ามบรรทัดแรก (ที่เป็นหัวตาราง)
+            const rows = data.split('\n').slice(1);
+            
+            const labels = [];
+            const temp = [];
+            const humid = [];
+
+            // วนลูปอ่านข้อมูลทีละแถว
+            rows.forEach(row => {
+                const cols = row.split(','); // แยกคอลัมน์ด้วยเครื่องหมายจุลภาค
+                // เช็คว่ามีข้อมูลครบ 3 คอลัมน์ และไม่ใช่บรรทัดว่าง
+                if (cols.length >= 3 && cols[0].trim() !== '') {
+                    labels.push(cols[0].trim());           // คอลัมน์ A (เวลา)
+                    temp.push(parseFloat(cols[1].trim()));   // คอลัมน์ B (อุณหภูมิ)
+                    humid.push(parseFloat(cols[2].trim()));  // คอลัมน์ C (ความชื้น)
+                }
+            });
+
+            // อัปเดตข้อมูลในกราฟ
+            weatherChart.data.labels = labels;
+            weatherChart.data.datasets[0].data = temp;
+            weatherChart.data.datasets[1].data = humid;
+            weatherChart.update();
+
+            // อัปเดตตัวเลขปัจจุบัน (ดึงค่าจากแถวสุดท้ายที่มีข้อมูล)
+            if (temp.length > 0 && !isNaN(temp[temp.length - 1])) {
+                document.getElementById('current-temp').innerText = temp[temp.length - 1] + ' °C';
+                document.getElementById('current-humid').innerText = humid[humid.length - 1] + ' %';
+            }
+
+            document.getElementById('status-text').innerText = `อัปเดตข้อมูลล่าสุดเมื่อ: ${new Date().toLocaleTimeString('th-TH')}`;
+
+        } catch (error) {
+            console.error("เกิดข้อผิดพลาดในการดึงข้อมูล:", error);
+            document.getElementById('status-text').innerText = "เชื่อมต่อล้มเหลว โปรดตรวจสอบลิงก์ หรือตั้งค่าการแชร์ Sheets";
+            document.getElementById('status-text').style.color = "red";
+        }
+    }
+
+    // เรียกใช้ฟังก์ชันทันทีเมื่อเปิดหน้าเว็บ
+    fetchSheetData();
+
+    // ตั้งเวลาให้รีเฟรชข้อมูลอัตโนมัติทุกๆ 60 วินาที (60000 ms)
+    setInterval(fetchSheetData, 60000);
+
 </script>
 
 </body>
